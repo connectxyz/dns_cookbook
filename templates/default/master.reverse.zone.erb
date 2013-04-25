@@ -1,0 +1,23 @@
+<% if @reverse_pub != nil 
+	header = node['cxyz']['dns']['public_reverse_zone']
+	nodess = @reverse_pub
+%>
+<% elsif @reverse_priv != nil 
+	header = node['cxyz']['dns']['private_reverse_zone']
+	nodess = @reverse_priv
+%>
+<% end %>
+$ORIGIN <%= @zone %>. 
+$TTL <%= header['ttl'] ? header['ttl'] : '3600' %>
+@	IN SOA	<%= node['fqdn'] %>.<%= header['forward_zone_suffix'] %>. <%= header['admin_email'] ? header['admin_email'] : "no.email.specified.tld" %>. (
+		<%= header['serial'] ? header['serial'] : "10" %>
+		<%= header['slave_refresh'] ? header['slave_refresh'] : "900" %>
+		<%= header['slave_retry'] ? header['slave_retry'] : "600" %>
+		<%= header['slave_expiration'] ? header['slave_expiration'] : "86400" %>
+		<%= header['min_cache_time'] ? header['min_cache_time'] : "3600" %>
+		)
+		NS 	 <%= node['fqdn'] %>.<%= header['forward_zone_suffix'] %>.
+<% nodess.each do |nodee| 
+%>
+<%= nodee['address'].split('.').pop %>              PTR		<%= nodee['name'] %>.<%= header['forward_zone_suffix'] %>.
+<% end %>

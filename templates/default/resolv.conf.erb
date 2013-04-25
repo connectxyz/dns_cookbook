@@ -1,0 +1,8 @@
+<% node['cxyz']['dns']['client']['search'].each do |searchdomain| %>
+search <%= searchdomain %>
+<% end %>
+domain <%= node['cxyz']['dns']['client']['domain'] %>
+<% @hosts.each do |host| %>
+nameserver <%= host %>
+<% end %>
+

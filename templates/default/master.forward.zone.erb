@@ -1,0 +1,36 @@
+
+<% if @reverse_pub != nil 
+	header = node['cxyz']['dns']['pub_forward_zones'][0][@zoneName]['records']
+	#nodess = @reverse_pub[@reverse_pub.keys()[0]]
+	nodess = @reverse_pub
+%>
+<% elsif @reverse_priv != nil 
+	header = node['cxyz']['dns']['priv_forward_zones'][0][@zoneName]['records']
+	nodess = @reverse_priv
+%>
+<% end %>
+$ORIGIN <%= @zoneName %>. 
+$TTL <%= @zone['ttl'] ? @zone['ttl'] : '3600' %>
+@	IN SOA	<%= node['fqdn'] %>.<%= @zoneName %>. <%= @zone['admin_email'] ? @zone['admin_email'] : "no.email.specified.tld" %>. (
+		<%= @zone['serial'] %>
+		<%= @zone['slave_refresh'] %>
+		<%= @zone['slave_retry']  %>
+		<%= @zone['slave_expiration']  %>
+		<%= @zone['min_cache_time']  %>
+		)
+<% nodess.keys.each do |revkey| nodess[revkey].each do |nodee| %>
+<% [@masters, @slaves].flatten.compact.each do |hurr| if hurr == nodee['address'] %>
+                NS             <%= nodee['name'] %>.<%= @zoneName %>.
+<% end end end end %>
+
+
+<% nodess.keys.each do |revkey| nodess[revkey].each do |nodee| %>
+
+<%= nodee['name'] %>              A             <%= nodee['address'] %>
+<% end end %>
+
+<% header.each do |record| %>
+<% record.each do |col| %>
+<%= col %>	<% end %>
+<% end %>
+

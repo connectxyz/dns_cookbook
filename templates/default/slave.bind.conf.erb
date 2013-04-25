@@ -1,0 +1,125 @@
+#acl clients {
+	#localnets;
+	#::1;
+#};
+
+options {
+	version "";	// remove this to allow version queries
+	allow-query {
+		127.0.0.1;
+	<% @reverse_priv.each_pair do |k, v| %>
+	<% v.each do |kv| %> 
+		<%= kv['address'] %>;
+	<% end %>
+	<% end %>
+	<% node['cxyz']['dns']['recursive_clients_allow'].each do |client| %>
+                <%= client %>;
+        <% end %>
+
+	};
+	listen-on    { any; }; #iptables....
+	forwarders {
+		4.2.2.1;
+		4.2.2.2;
+		4.2.2.3;
+		4.2.2.4;
+		8.8.8.8;
+		8.8.4.4;
+	};
+	allow-recursion {
+		127.0.0.1;
+ 	<% @reverse_priv.each_pair do |k, v| %>
+        <% v.each do |kv| %>
+                <%= kv['address'] %>;
+        <% end %>
+        <% end %>
+ 	<% node['cxyz']['dns']['recursive_clients_allow'].each do |client| %>
+                <%= client %>;
+        <% end %>
+
+	};
+	max-cache-size 200M;
+};
+
+zone "." {
+	type hint;
+	file "/etc/bind/db.root";
+};
+
+zone "localhost" {
+	type master;
+	file "/etc/bind/db.local";
+	allow-transfer { localhost; };
+};
+
+zone "127.in-addr.arpa" {
+	type master;
+	file "/etc/bind/db.127";
+	allow-transfer { localhost; };
+};
+
+#private network reverse zones
+<% @reverse_priv.each_pair do |k, v| %>
+zone "<%= k %>" { 
+	type slave;
+	file "/etc/bind/reverse/<%= k %>.zone";
+	<% if @masters !=nil && @masters != [] %>
+	masters {
+	<% @masters.each do |addr| %>
+		<%= addr %>; 
+	<% end %>
+	<% end %>
+	};
+};
+<%end %>
+
+#public network reverse zones
+<% @reverse_pub.each_pair do |k, v| %>
+zone "<%= k %>" {
+        type slave;
+        file "/etc/bind/reverse/<%= k %>.zone";
+ 	<% if @masters !=nil && @masters != [] %>
+	masters {
+        <% @masters.each do |addr| %>   
+                <%= addr %>;
+        <% end %>
+        <% end %>
+        };
+};
+<%end %>
+
+#public network forward zones
+<% if node['cxyz'] != nil && node['cxyz']['dns'] != nil && node['cxyz']['dns']['pub_forward_zones'] != nil %>
+<% node['cxyz']['dns']['pub_forward_zones'].each do |name| %>
+zone "<%= name.keys()[0] %>" {
+	type slave;
+	file "/etc/bind/forward/<%= name.keys()[0] %>.zone";
+	 <% if @masters !=nil && @masters != [] %>
+        multi-master yes;
+        notify yes;
+        allow-query { any; };
+	masters {
+        <% @masters.each do |addr| %>
+                <%= addr %>;
+        <% end %>
+        <% end %>
+	};	
+};
+<% end %>
+<% end %>
+#private network forward zones
+<% if node['cxyz'] != nil && node['cxyz']['dns'] != nil && node['cxyz']['dns']['priv_forward_zones'] != nil %>
+<% node['cxyz']['dns']['priv_forward_zones'].each do |name| %>
+zone "<%= name.keys()[0] %>" {
+        type slave;
+        file "/etc/bind/forward/<%= name.keys()[0] %>.zone";
+         <% if @masters !=nil && @masters != [] %>
+        masters {
+        <% @masters.each do |addr| %>
+                <%= addr %>;
+        <% end %>
+        <% end %>
+        };
+};
+<% end %>
+<% end %>
