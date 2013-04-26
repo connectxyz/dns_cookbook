@@ -17,7 +17,7 @@ directory "/etc/bind/forward" do
         group "bind"
         recursive true
         mode "0770"
-	only_if { node['cxyz']['dns']['publish'] }
+	only_if { node['dns']['publish'] }
 end
 
 directory "/etc/bind/reverse" do
@@ -26,7 +26,7 @@ directory "/etc/bind/reverse" do
         group "bind"
         recursive true
         mode "0770"
-        only_if { node['cxyz']['dns']['publish'] }
+        only_if { node['dns']['publish'] }
 
 end
 
@@ -169,7 +169,7 @@ reverse_zones_pub.each_pair do |k, v|
 end
 
 #forward zone file priv
-if node['cxyz'] != nil && node['cxyz']['dns'] != nil && node['cxyz']['dns']['priv_forward_zones'] != nil
+if node != nil && node['dns'] != nil && node['dns']['priv_forward_zones'] != nil
 	node['cxyz']['dns']['priv_forward_zones'].each do |name|
 		template "/etc/bind/forward/#{name.keys()[0]}.zone" do
 		source "master.forward.zone.erb"
